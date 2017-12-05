@@ -1,0 +1,39 @@
+Goals:
+	1. We propose to analyze the issue around New York City (including Manhattan, Queens, Brooklyn, and Bronx) by frequency of reported incidents in each area.
+	2. We will look for what factors correlate the incidents type and residents (for example, race, age, and income), environments (business, living, nature, etc.).
+	3. Time and weather may be an important factors about incidents, we will look into it too.
+Methods: 1. We will collect the data through reliable websites and then clean and tidings data.
+	2. Before analysis we will store the date in useful database like MongoDB, Neo4j or MySQL.
+	3. We will use RStudio or Jpyther as main tool in analysis. We may use Spark to connect to MongoDB
+	4. Statistical methods will be applied in our analysis, such as cluster analysis, PCA. (could be more)
+	5. We may use R package such as iGraph or ggplot2 / Tableau Public (Free)/ PowerBI Desktop (Free) to present our results.
+++++++++++++++++++++++++++++++++
+
+Data clearing
+	Clearing in R and save the data to a DB
+	clean.zipcodes(zips)
+		From <https://www.rdocumentation.org/packages/zipcode/versions/1.0/topics/clean.zipcodes> 
+	
+	
+Data analyst
+	(if we do these in a map, it could be best for 1 & 2., R or tableau)
+	Map data :http://www.milanor.net/blog/maps-in-r-plotting-data-points-on-a-map/
+	1. 311 calls Volume (Frequency, scrabble)  - by cities, type of issues and monthly 
+	2. Use the Neo4j to show the link of the cities and issues (node - city or issue)
+	Here, we need to calculate the percentages of the types of issues ( or deeper level by zip code) -> propose on % and advice the location public service expending and police arrangement…
+	
+	(… something I forget here) 
+	 
+
+	3. Analyst the correlation of variables - Scale plot (prepare the data for multiply linear models)  
+	Multiply Linear regression model - (may do hypothesis test + A/B test) 
+	Estimate the #of calls 
+
+	4. K-Mean Cluster analysis - which areas have similar environment( population & income) and issues 
+http://www.sthda.com/english/articles/25-cluster-analysis-in-r-practical-guide/111-types-of-clustering-methods-overview-and-quick-start-r-code/
+
+	5. PCA analyst (vs k-mean cluster analysis by K variables and # of components in PCA )
+	
+
+
+
