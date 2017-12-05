@@ -16,24 +16,31 @@ Data clearing
 	
 	
 Data analyst
-	(if we do these in a map, it could be best for 1 & 2., R or tableau)
+		(if we do these in a map, it could be best for 1 & 2., R or tableau)
 	Map data :http://www.milanor.net/blog/maps-in-r-plotting-data-points-on-a-map/
+	
+	https://austinwehrwein.com/digital-humanities/creating-a-density-map-in-r-with-zipcodes/
+	
 	1. 311 calls Volume (Frequency, scrabble)  - by cities, type of issues and monthly 
 	2. Use the Neo4j to show the link of the cities and issues (node - city or issue)
-	Here, we need to calculate the percentages of the types of issues ( or deeper level by zip code) -> propose on % and advice the location public service expending and police arrangement…
+	Here, we need to calculate the percentages of the types of issues ( or deeper level by zip code) 
+	-> propose on % and advice the location public service expending and police arrangement…
 	
-	(… something I forget here) 
+	(… something I forget here) (maybe use simulation to estimate the 311 calls.
+
 	 
 
 	3. Analyst the correlation of variables - Scale plot (prepare the data for multiply linear models)  
 	Multiply Linear regression model - (may do hypothesis test + A/B test) 
 	Estimate the #of calls 
+	https://www.statmethods.net/stats/regression.html
 
 	4. K-Mean Cluster analysis - which areas have similar environment( population & income) and issues 
 http://www.sthda.com/english/articles/25-cluster-analysis-in-r-practical-guide/111-types-of-clustering-methods-overview-and-quick-start-r-code/
 
 	5. PCA analyst (vs k-mean cluster analysis by K variables and # of components in PCA )
-	
+		http://web.missouri.edu/~huangf/data/mvnotes/Documents/pca_in_r_2.html
+
 
 
 
