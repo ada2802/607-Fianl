@@ -9,6 +9,22 @@ Methods: 1. We will collect the data through reliable websites and then clean an
 	5. We may use R package such as iGraph or ggplot2 / Tableau Public (Free)/ PowerBI Desktop (Free) to present our results.
 ++++++++++++++++++++++++++++++++
 
+
+# freq of complaint types by month (top 20 bar char) (group by types)
+# table join by date -> weater (3years) and top 20 correlation (21x21 matrix)-> choose which hight relation to weater (approve to -1, 1) then prepare linear regresion 
+
+#weather( by TAVG and three stations)
+
+#scatter to show corrlation -> 
+ 
+
+#table join zip -> population , incomes and top 20 correlation (22x22 matrix)-> same as above
+
+# mapping zip -> tableau  
+
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++
 Data clearing
 	Clearing in R and save the data to a DB
 	clean.zipcodes(zips)
