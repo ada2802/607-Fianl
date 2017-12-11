@@ -1,0 +1,351 @@
+---
+title: "311 Calls - 607 final project"
+author: "Chunmei Zhu and John Wong"
+date: "November 26, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+      
+---
+
+
+```{r}
+#Download required packages
+library(XML)
+library(RCurl)
+library(xlsx)
+library(rvest)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(wordcloud)
+```
+
+#Data Source 
+
+download data from NYC govement open data
+
+311 Service Requests from 2010 to Present  https://data.cityofnewyork.us/dataset/311-Service-Requests-From-2011/fpz8-jqf4
+Median Household Income 2017 by zip code http://zipatlas.com/us/ny/zip-code-comparison/median-household-income.htm
+NYC Weather, search New York, NY for area of interest  https://www.ncdc.noaa.gov/cdo-web/confirmation
+
+
+Transformed data- CleanZipCodePerDayComplaintFreq.txt 
+
+
+```{r}
+
+#Data set: we need to create a table which contains daily weather, complaint types by zip code. 
+
+#Prepare raw data sets: read in csv or txt files into R 
+
+raw_call311_2013to2017 <- read.csv(file="D:/CUNY_SPS_DA/607_Data_Aq/607 Final Project/goodData/CleanZipCodePerDayComplaintFreq.txt", header=TRUE, sep=",")
+
+raw_nyc_zipcode <- read.csv(file="D:/CUNY_SPS_DA/607_Data_Aq/607 Final Project/goodData/Zipcode_tidy.csv", header=TRUE, sep=",")
+
+```
+
+
+###Clean Zip Codes
+
+```{r}
+#Clean Zip Code: filter 311 Calls insident zip code by New York zip code table 
+zipCode <- raw_nyc_zipcode$Zip.Code
+
+```
+
+
+#Total Complaint Types Word Cloud
+
+```{r }
+word_count <- raw_call311_2013to2017 %>%
+  drop_na() %>%
+  filter(Type != "TAVG") %>%
+  group_by(Type) %>%
+  summarize(
+    freq = sum(Freq)
+  )
+
+set.seed(1234)
+wordcloud(words = word_count$Type, freq = word_count$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.1 
+          )
+
+```
+
+
+
+#Top 20 complaint types from 2011 to 2017
+
+
+```{r}
+
+# Read CSV into R
+top20types <- read.csv(file="D:/CUNY_SPS_DA/607_Data_Aq/607 Final Project/goodData/combine.txt", header=TRUE, sep=",")
+
+top20Total <- top20types %>%
+  select(Type,SubTotal)%>%
+  drop_na() %>%
+  group_by(Type) %>%
+  summarize(
+    Total = sum(SubTotal)
+  )%>%
+  arrange(-Total)%>%
+  top_n(n = 20, Total)
+
+ggplot(top20Total, aes(x=top20Total$Type, top20Total$Total, color=top20Total$Total)) + geom_bar(stat = "identity",fill='lightblue', color="lightblue") + xlab("Complaint Types") +
+  ylab("Frequency") + 
+  theme(axis.text.x=element_text(angle=90,hjust=0.2,vjust=0.2))
+
+```
+
+
+#General correlation analysis for complain types
+
+
+```{r}
+#transfor long form to wide form
+wide_top20types <- spread(top20types,Type,SubTotal)
+#wide_top20types 
+
+wide_top20types <- wide_top20types[,2:23]
+
+
+#calculate correlation matrix
+res <- cor(wide_top20types, use = "complete.obs")
+round(res, 2)
+
+
+library(corrplot)
+
+# correlogram with hclust reordering
+corrplot(res, type="upper", order="hclust")
+
+#Check data 
+#save correlation matrix to long form
+library(reshape2)
+long_res <- melt(res)
+
+
+names(wide_top20types)
+
+x <- wide_top20types[,c(17,3)]
+a<-x[complete.cases(x),]
+names(a)
+summary(a)
+write.csv(a, "generalCorrelationCompType.csv")
+
+```
+
+
+###Correlation of average temperture (TAVG) vs top 10 complaint types per zip code
+
+```{r}
+library(dplyr)
+
+df_matrix_corr_per_zip <- list()
+
+#remove zip codes which do not have good estimation of top 10 correlations
+ remove <- c (10471,10475,10464,11239,10020,10004,10005,10006,10007,10280, 10044,11363,11359,11360, 11104,11693,11694,11695, 11697,11004,11005, 11411,11426, 11427, 11428,10307,10314)
+ zipCode <- zipCode [! zipCode %in% remove]
+
+
+for(i in 1:length(zipCode)) {  
+  #filter data by zip code
+ 
+  data_by_zip <- raw_call311_2013to2017 %>%
+    select(Incident.Zip, CreatedDate, Type, Freq) %>%
+    drop_na() %>%
+    filter(Incident.Zip == zipCode[i])
+  
+  #fix freq = sum(freq) after fxing duplicated complaint type in converison 
+  data_by_zip <- data_by_zip %>%
+    group_by(Incident.Zip, CreatedDate, Type) %>%
+    summarize(
+      Freq = sum(Freq)
+    )
+  
+  #calculate top 10 complaint type frequency 
+  data_by_zip_total <- data_by_zip %>%
+    group_by (Type) %>%
+    summarize(
+      Total = sum(Freq)
+    )
+  
+  
+ data_by_zip_total <- data_by_zip_total %>%
+   top_n(n = 10, Total )
+  
+ #add weather back to the list
+ 
+ Comptype <- as.character(data_by_zip_total$Type)
+  data_by_zip <- data_by_zip %>%
+    filter (Type %in% c(Comptype, "TAVG","SNOW"))
+
+ 
+  #transform long form to wide form
+   data_by_zip <- spread(data_by_zip,Type,Freq)
+   data_by_zip <- data_by_zip %>%
+     drop_na() 
+   data_by_zip <-data_by_zip[,3:dim(data_by_zip)[2]]
+  #calculate correlation by zip code
+  cor_data_by_zip <- cor(data_by_zip, use = "complete.obs")
+  #save correlation matrix by zip code to a list
+  df_matrix_corr_per_zip[[i]] <- cor_data_by_zip
+
+}
+
+ #output correlation matrix by zip code for interputation
+ for(i in 1:length(zipCode)) {
+   
+   tmp_rec <- melt(df_matrix_corr_per_zip[[i]])
+   tmp_rec$zipCode <- zipCode[i]
+   write.table(tmp_rec, file="corr.csv",sep = ",", append = TRUE)
+ }
+ 
+```
+
+### Excel file corr.csv analysis
+load interputation
+
+```{r}
+weather_compType_zip <- read.csv(file="D:/CUNY_SPS_DA/607_Data_Aq/607 Final Project/goodData/WeatherCorrelationFinding.csv", header=TRUE, sep=",") 
+
+library(knitr)
+kable(weather_compType_zip)
+
+```
+
+
+###Correlation of Population and median household income by zip code
+
+
+```{r}
+
+#Prepare raw data sets: read in csv or txt files into R 
+
+pop_inc_zip2017 <- read.csv(file="D:/CUNY_SPS_DA/607_Data_Aq/607 Final Project/goodData/2017_ComplaintFreq_pop_inc.csv", header=TRUE, sep=",")
+
+#transform long form to wide form
+pop_inc_zip2017 <- spread(pop_inc_zip2017,Type,Value)
+
+
+write.csv(pop_inc_zip2017,"D:/CUNY_SPS_DA/607_Data_Aq/607 Final Project/goodData/hypothsisTest_High_Inc.csv")
+
+pop_inc_zip2017 <- pop_inc_zip2017[,2:dim(pop_inc_zip2017)[2]]
+
+#calculate correlation by zip code
+  cor_pop_inc_zip2017 <- cor(pop_inc_zip2017, use = "complete.obs")
+
+library(corrplot)
+# correlogram with hclust reordering
+corrplot(cor_pop_inc_zip2017, type="upper", order="hclust")
+
+```
+
+
+#hypothesis test: Does Higher-income have less number of complaints?
+We have 178 mid-household income by zip code in NYC and frequency of 311 calls per zip code in 2017. we use 95% z-test in single tail to validate whether to accept or reject hypothesis.
+
+hypothsis test : 
+Ho:  # of complaints of Higher avg income > # of complaints of avg income
+Ha :  # of complaints of Higher avg income <= # of complaints of avg income
+ 
+Conclution: reject Ho
+
+
+```{r}
+
+hypothysis_pop_inc <- read.csv(file="D:/CUNY_SPS_DA/607_Data_Aq/607 Final Project/goodData/hypothsisTest_High_Inc.csv", header=TRUE, sep=",")
+
+hypothysis_pop_inc <- hypothysis_pop_inc %>%
+  select(Zipcode,AvgIncome,ComplaintFreq,Population)%>%
+  drop_na()%>%
+  filter(AvgIncome != 0, Population !=1 )
+
+averagePopulationIncome= mean(hypothysis_pop_inc$AvgIncome)
+averagePopulationComplaintFreq= mean(hypothysis_pop_inc$ComplaintFreq)
+
+highIncome <- hypothysis_pop_inc %>%
+    filter(hypothysis_pop_inc$AvgIncome >averagePopulationIncome)
+
+averagehighIncomeComplaintFreq= mean(highIncome$ComplaintFreq)
+numHighIncome <- dim(highIncome)[1]
+
+sdHighIncomeComplainFreq <- sd(highIncome$ComplaintFreq)
+
+#Find z score of high midian household income complaint frequency
+z_score_highIncomComplainFreq <- (averagehighIncomeComplaintFreq-averagePopulationComplaintFreq)/(sdHighIncomeComplainFreq/sqrt(numHighIncome))
+
+
+#p-value of high income complaint frequency 
+pnorm(z_score_highIncomComplainFreq, lower.tail = TRUE)
+
+```
+
+
+###Linear regression 
+
+###Average Temperture VS Heat/Hot water complaint frequency.
+(daily record is an observation)
+
+```{r}
+
+raw_call311_2013to2017 <- read.csv(file="D:/CUNY_SPS_DA/607_Data_Aq/607 Final Project/goodData/CleanZipCodePerDayComplaintFreq.txt", header=TRUE, sep=",")
+
+#get complaint type = Heat/Hot water total frequency per day
+
+#get average temperture per day (use zipcode 10001 as example)
+
+library(dplyr)
+x <- raw_call311_2013to2017 %>%
+  filter ( Type == 'HEAT/HOT WATER') %>%
+  group_by(CreatedDate, Type) %>%
+  summarize(
+    Freq = sum(Freq)
+  )
+
+y <- raw_call311_2013to2017 %>%
+    drop_na() %>%
+  filter ( Type == "TAVG"  , Incident.Zip=="10001") %>%
+    select(CreatedDate, Type, Freq)
+
+y$Freq <- round(y$Freq,0)
+
+xy<- rbind(as.matrix(x),as.matrix(y))
+
+xy <- spread(data.frame(xy), Type, Freq)
+
+xy$yyyymm <- format(as.Date(xy$CreatedDate, "%m/%d/%Y"), "%Y%m" )
+
+xy <- xy %>% drop_na()
+
+#Month heat/hot water total count
+#Avgerage temperture of the month
+
+xy$`HEAT/HOT WATER` <- as.numeric(as.character(xy$`HEAT/HOT WATER`))
+xy$TAVG <- as.numeric(as.character(xy$TAVG))
+
+
+xy2 <- xy %>%
+  group_by(yyyymm) %>%
+  summarize(
+    Month_Sum = sum(`HEAT/HOT WATER`),
+    Month_TAVG = mean(TAVG)
+  )
+
+
+lm(xy2$Month_Sum ~ xy2$Month_TAVG)
+# numberof Month Heat/Hot Water Complaint = 68728.2 - 905.1* number of Month_TAVG 
+# For example, numberof Month Heat/Hot Water Complaint is 23473 when averger temperture is 50 degree.
+
+#Prodetive Modeling - linear regression
+plot(xy2$Month_Sum,xy2$Month_TAVG, main="Monthly TAVG-Heat/Hot Water Complaint Frequency", 
+  	xlab="Monthly Complaint ", ylab="Monthly Average Temperture (TAVG)" )
+lines(lowess(xy2$Month_Sum , xy2$Month_TAVG), col="blue") # lowess line (x,y)
+
+```
